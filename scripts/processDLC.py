@@ -456,16 +456,25 @@ def createtab(loco, vellroll, angrot, angvel, quad):
     # quadrants
     #newquad = quad.set_index('mice').T.diff()
     
+    # append data if requested
+    if append:
+        # check if file exists
+        if os.path.isfile(outfile):
+            dat = pd.read_csv(outfile, sep='\t')
+            out = dat.append(out, ignore_index=True)
+        else:
+            print("File to append `%s` not found, creating a new file" % (outfile))
     
-    # export
+    
+    # # export
     path = outfile.split("/")
     path = list(filter(None, path))
     path.remove(".")
     ## test if absolute path is given
     if os.path.exists("/"+ path[0]):
         out.to_csv(outfile,index=False, sep = "\t")
-        
-        
+
+
     else:
         newpath = ["."] + path[:-1]
         creatpath = "/".join(newpath)
