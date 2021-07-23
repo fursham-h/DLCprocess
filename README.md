@@ -56,7 +56,7 @@ This script will plot out figures from the different measurements, as an
 interactive pyplot. You may save these images using the export tool. Below are
 some examples of output plots:
 
-<p align="left">
+<p align="center">
   <img src="images/Locomotion.png" width="350"/>
   <img src="images/Velocity.png" width="300"/>
 </p>
