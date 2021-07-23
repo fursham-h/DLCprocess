@@ -40,6 +40,7 @@ opt:			argument:	Default		description:
 ############ Class and Def #############
 ########################################
 
+### function to parse command-line arguments
 def argparse():
 	# attempt to read command-line option-argument tuples and mandatory argument.
 	try:
@@ -51,7 +52,6 @@ def argparse():
 	except IndexError:
 		sys.exit(usage)		# exit script and print usage if command-line input is not provided
  
-
     # define global variables
 	global framerate
 	global res
@@ -61,7 +61,7 @@ def argparse():
 	global outfile
 	global append
 	
-	# define variables
+	# assign variables
 	framerate = 25
 	res = [1280,960]
 	scale = 6
@@ -70,9 +70,7 @@ def argparse():
 	outfile="./DLCprocess.tsv"
 	append = False
 	
-	
-
-	# # parse command-line options into its appropriate variables/actions
+	# parse command-line options into its appropriate variables/actions
 	for opt,arg in options:
 		if opt in ("-r","--resolution"):
 			res = list(map(int,arg.split('x')))
@@ -90,25 +88,13 @@ def argparse():
 			append = True
 		if opt in ("-h","--help"):
 			sys.exit(usage)
-	# 
-	# # Additional preparations and checks
-	# dict_codonrank,aa = pickle.load(open('definitions','r'))		#pre-load dictionaries and aa list
-	# dict_species = pickle.load(open('species','r'))
-	# if not re.search(r'.txt',inputfile):
-	# 	if not set(inputfile.upper()) <= set(aa):sys.exit('Error: Input sequence may contain illegal characters')			# check for non-amino acid characters
-	# if len(weights) != len(list_organisms): sys.exit('Error: weights do not match number of organisms')			# check for correct number of weights
-	# 
 	
 	return inputfile
 
-
+### function to process input h5 file and extract info
 def processh5(inputfile):
     # read data
     dat = pd.read_hdf(inputfile)
-    
-    
-    
-
     
     # define global variables
     global parts
@@ -123,7 +109,7 @@ def processh5(inputfile):
     mice.sort()
     parts = list(set(cols['bodyparts']))
     
-    # get mice positions
+    # get mice positions in setup
     firstpos = np.array(dat.loc[0:0, (exp, mice, "nose", ["x","y"])])[0]
     firstpos = np.reshape(firstpos, (4,2))
     firstposdf = pd.DataFrame(firstpos, columns=['x','y'])
@@ -141,122 +127,56 @@ def processh5(inputfile):
             firstposdf.loc[index, 'sum'] = "Bottom-left"
         elif row['xdiff'] == True and row['ydiff'] == False:
             firstposdf.loc[index, 'sum'] = "Top-right"
-    
     micepos = list(firstposdf['sum'])
    
-    
-    
-    # firstposdf = firstposdf.sort_values(by=['x'], ignore_index=True)
-    # firstposdf['xpos'] = firstposdf.index
-    # firstposdf = firstposdf.sort_values(by=['y'], ignore_index=True)
-    # firstposdf['ypos'] = firstposdf.index
-    # firstposdf = firstposdf.sort_values(by=['xpos','ypos'], ignore_index=True)
-    
-    
-    # # convert dat to longformat
-    # newcolnames = np.core.defchararray.add(list(cols['individuals']), (["-"] * len(cols.index)))
-    # newcolnames = np.core.defchararray.add(newcolnames, list(cols['bodyparts']))
-    # newcolnames = np.core.defchararray.add(newcolnames,  (["-"] * len(cols.index)))
-    # newcolnames = np.core.defchararray.add(newcolnames, list(cols['coords']))
-    # 
-    # dat.columns = newcolnames
-    # dat["frame"] = dat.index
-    # datlong = pd.melt(dat, value_vars=newcolnames, id_vars=['frame'])
-    # datlong['individual'] = list(val[0] for val in datlong['variable'].str.split(pat = "-"))
-    # datlong['bodyparts'] = list(val[1] for val in datlong['variable'].str.split(pat = "-"))
-    # datlong['coords'] = list(val[2] for val in datlong['variable'].str.split(pat = "-"))
-    # datlong['id'] = np.core.defchararray.add(list(datlong['bodyparts']), list(datlong['coords']))
-    # datfinal = datlong.pivot(index='id', columns = 'individual', values = 'value')
-    # print(datfinal)
-    
+    # return datafile
     return dat
 
-
+### function to test locomotion
 def testloco(inputdat):
-    xdf = pd.DataFrame(columns=mice)
-    ydf = pd.DataFrame(columns=mice)
-    prevxdf = pd.DataFrame(columns=mice)
-    prevydf = pd.DataFrame(columns=mice)
-    for thismice in mice:
-        xdf[thismice] = list(inputdat.loc[0:len(inputdat), (exp, thismice, 'middle_head', 'x')])
-        ydf[thismice] = list(inputdat.loc[0:len(inputdat), (exp, thismice, 'middle_head', 'y')])
-
-        prevxdf[thismice] = list(inputdat.loc[0:0, (exp, thismice, 'middle_head', 'x')]) + list(inputdat.loc[0:(len(inputdat)-2), (exp, thismice, 'middle_head', 'x')])
-        prevydf[thismice] = list(inputdat.loc[0:0, (exp, thismice, 'middle_head', 'y')]) + list(inputdat.loc[0:(len(inputdat)-2), (exp, thismice, 'middle_head', 'y')])
-
-    out = np.sqrt(((np.array(xdf) - np.array(prevxdf)) **2) + ((np.array(ydf) - np.array(prevydf))**2)) * 0.026458 * scale * 0.01
+    
+    # Get vector between the coord of middle_head between frames
+    xdiff = np.diff(np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'middle_head', 'x')]), axis=0)
+    ydiff = np.diff(np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'middle_head', 'y')]), axis=0)
+    
+    # Calculate displacement of vector and create output
+    out = np.sqrt((xdiff **2) + (ydiff**2)) * 0.026458 * scale * 0.01
+    out = np.r_[np.zeros((1,4)), out]
     out = pd.DataFrame(out, columns = micepos)
 
-
-
-    
-    # 
-    # # create output array
-    # temp_array = np.empty((len(inputdat.index),4))
-    # out = pd.DataFrame(columns=mice)
-    # 
-    # #create dict with starting head coord
-    # dict_currentcoord= {}
-    # for thismice in mice:
-    #     dict_currentcoord[thismice] = [float(inputdat.loc[0,(exp, thismice, 'middle_head', 'x')]), float(inputdat.loc[0,(exp, thismice, 'middle_head', 'y')])]
-    # 
-    # for index, row in inputdat.iterrows():
-    #     for miceindex in range(len(mice)):
-    #         thismice = mice[miceindex]
-    #         #get x and y cooord
-    #         x = float(inputdat.loc[index, (exp, thismice, 'middle_head', 'x')])
-    #         y = float(inputdat.loc[index, (exp, thismice, 'middle_head', 'y')])
-    # 
-    #         # get distance travelled
-    #         dist = math.sqrt((x-dict_currentcoord[thismice][0])**2 + (y-dict_currentcoord[thismice][1])**2) * 0.26458 * scale
-    #         temp_array[index][miceindex] = dist
-    # 
-    #         # update dict
-    #         dict_currentcoord[thismice] = [float(inputdat.loc[index,(exp, thismice, 'middle_head', 'x')]), float(inputdat.loc[index,(exp, thismice, 'middle_head', 'y')])]
-
-    #
-    # for key in dict_currentcoord:
-    #     print(key, ' : ', dict_currentcoord[key])
-
-    # df = pd.DataFrame(temp_array, columns = mice)
-    #print(df.head())
-    #print(xdf)
-    #print(ydf)
     return(out)
     
-
+### function to test velocity
 def testvelo(dat):
     vel = pd.DataFrame(np.array(dat)*25, columns = micepos)
     vellroll = vel.rolling(25).mean().shift(-3)
     vellroll.fillna(0)
     return(vellroll)
 
+# function to test rotation
 def testrot(inputdat):
-    ax = pd.DataFrame(columns=mice)
-    ay = pd.DataFrame(columns=mice)
-    bx = pd.DataFrame(columns=mice)
-    by = pd.DataFrame(columns=mice)
-    for thismice in mice:
-        ax[thismice] = np.array(inputdat.loc[0:len(inputdat), (exp, thismice, 'middle_head', 'x')]) - np.array(inputdat.loc[0:len(inputdat), (exp, thismice, 'tail_base', 'x')])
-        ay[thismice] = np.array(inputdat.loc[0:len(inputdat), (exp, thismice, 'middle_head', 'y')]) - np.array(inputdat.loc[0:len(inputdat), (exp, thismice, 'tail_base', 'y')])
-        
-        bx[thismice] = list(np.array(inputdat.loc[0:0, (exp, thismice, 'middle_head', 'x')]) - np.array(inputdat.loc[0:0, (exp, thismice, 'tail_base', 'x')])) + list(np.array(inputdat.loc[0:(len(inputdat)-2), (exp, thismice, 'middle_head', 'x')]) - np.array(inputdat.loc[0:(len(inputdat)-2), (exp, thismice, 'tail_base', 'x')]))
-        by[thismice] = list(np.array(inputdat.loc[0:0, (exp, thismice, 'middle_head', 'y')]) - np.array(inputdat.loc[0:0, (exp, thismice, 'tail_base', 'y')])) + list(np.array(inputdat.loc[0:(len(inputdat)-2), (exp, thismice, 'middle_head', 'y')]) - np.array(inputdat.loc[0:(len(inputdat)-2), (exp, thismice, 'tail_base', 'y')]))
+    
+    # extract vector of middle-head to tail 
+    ax = np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'middle_head', 'x')]) - np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'tail_base', 'x')])
+    ay = np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'middle_head', 'y')]) - np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'tail_base', 'y')])
+    bx = list(np.array(inputdat.loc[0:0, (exp, mice, 'middle_head', 'x')]) - np.array(inputdat.loc[0:0, (exp, mice, 'tail_base', 'x')])) + list(np.array(inputdat.loc[0:(len(inputdat)-2), (exp, mice, 'middle_head', 'x')]) - np.array(inputdat.loc[0:(len(inputdat)-2), (exp, mice, 'tail_base', 'x')]))
+    by = list(np.array(inputdat.loc[0:0, (exp, mice, 'middle_head', 'y')]) - np.array(inputdat.loc[0:0, (exp, mice, 'tail_base', 'y')])) + list(np.array(inputdat.loc[0:(len(inputdat)-2), (exp, mice, 'middle_head', 'y')]) - np.array(inputdat.loc[0:(len(inputdat)-2), (exp, mice, 'tail_base', 'y')]))
 
-        #bx[thismice] = np.repeat(np.array(inputdat.loc[0:0, (exp, thismice, 'middle_head', 'x')]) - np.array(inputdat.loc[0:0, (exp, thismice, 'tail_base', 'x')]), len(inputdat))
-        #by[thismice] = np.repeat(np.array(inputdat.loc[0:0, (exp, thismice, 'middle_head', 'y')]) - np.array(inputdat.loc[0:0, (exp, thismice, 'tail_base', 'y')]), len(inputdat))
-
+    # count angle change
     outraw = np.arctan2(np.array(ay), np.array(ax)) - np.arctan2(np.array(by), np.array(bx))
+    
+    # normalize values so that 2pi is represented as 1 rotation
+    ## Create vectors with 2pi
+    twopie = np.full((len(inputdat), len(mice)), (math.pi*2))
+    
+    ## normalize
     outraw = np.where(outraw > math.pi, outraw - (2*math.pi), outraw)
     outraw = np.where(outraw < -math.pi, outraw + (2*math.pi), outraw)
     outcumsum = np.cumsum(outraw, axis=0)
-    twopie = np.full((len(inputdat), len(mice)), (math.pi*2))
-    onemod = np.full((len(inputdat), len(mice)), 1)
-
     outcumsum = np.divide(outcumsum, twopie)
-    # outcumsum = np.where(outcumsum > 0, outcumsum - np.floor(outcumsum), outcumsum)
-    # outcumsum = np.where(outcumsum < 0, outcumsum - np.ceil(outcumsum), outcumsum)
-
+    
+    # Count number of rotations
+    ## make pd dataframe for cumsum data and new outout dataframe
     out = pd.DataFrame(outcumsum, columns = micepos)
     norm = pd.DataFrame(np.zeros((len(inputdat), len(mice))), columns = micepos)
     for thismice in micepos:
@@ -267,37 +187,20 @@ def testrot(inputdat):
             elif row[thismice] < (thresh-1):
                 thresh-=1
             norm.loc[index, thismice] = row[thismice] - thresh
-    #print(norm.head())
-
-    
+            
+    # get change in angle between frames and select timepoint when change is above 0.9
     outdiff = norm.diff()
     outdiff['time'] = outdiff.index/framerate
     outdiffroll = pd.melt(outdiff, value_vars=micepos, id_vars='time')
     outdiffsigroll = outdiffroll[(outdiffroll['value'] > 0.9) | (outdiffroll['value'] < -0.9)]
     
-    
-    #peak_indices = find_peaks((np.array(out['individual4'])),height = 0.95)
-    # idx = (np.argwhere(np.diff(np.sign(np.array([0]*len(inputdat)) - np.array(out['individual3'])))).flatten())/25
-    # print(idx )
+    # Calculate angular velocity
     outrawdf = pd.DataFrame((outraw*25)/(math.pi), columns = micepos)
     angveldf = outrawdf.rolling(25).mean().shift(-3)
     angveldf.fillna(0)
-    # outroll = norm
-    #out = out.cumsum()
-    #outroll = out.rolling(25).mean().shift(-3)
+
     return(outdiffsigroll, angveldf)
-    # prepare and plot displacement data
-    # angveldf['time'] = angveldf.index/framerate
-    # angveldf = pd.melt(angveldf, value_vars=mice, id_vars='time')
-    # angveldf.columns = ['Time [s]', 'Mice', 'Angular velocity [rad/s]']
-    # 
-    # 
-    # g = sns.FacetGrid(angveldf, col="Mice", palette = "Set1", col_wrap=2)
-    # g.map(sns.lineplot, 'Time [s]', 'Angular velocity [rad/s]')
-    # # sns.lineplot(x="Time [s]", y="Angle relative to time 0",
-    # #          hue="Mice", 
-    # #          data=outroll)
-    # plt.show()
+
     
 
 def testquad(inputdat):
@@ -341,46 +244,32 @@ def testquad(inputdat):
     totalresposdfmelt = pd.melt(totalresposdf, value_vars=micepos, id_vars='id')
     totalresposdfmelt['size'] = totalresposdfmelt.groupby(['variable','value']).transform(np.size)
     
+    # remove duplicates and prepare output dataframe
     totalresposdfmeltunique = totalresposdfmelt.loc[0:len(totalresposdfmelt), ('variable', 'value','size')].drop_duplicates()
     totalresposdfmeltunique = totalresposdfmeltunique.sort_values(by = ['variable','value'])
-    totalresposdfmeltunique['cumsum'] = totalresposdfmeltunique.groupby(['variable']).cumsum()
-    a = totalresposdfmeltunique.pivot_table(index='variable',columns='value',values='cumsum', fill_value = 0)
+    totalresposdfmeltunique['cumsum'] = totalresposdfmeltunique.groupby(['variable']).cumsum()  # this convert counts to cumulative sum
+    out = totalresposdfmeltunique.pivot_table(index='variable',columns='value',values='cumsum', fill_value = 0)
     
-    newdf = pd.DataFrame(np.array(a)/len(inputdat), columns = list(a.columns))
-    newdf['mice'] = a.index
+    newdf = pd.DataFrame(np.array(out)/len(inputdat), columns = list(out.columns))
+    newdf['mice'] = out.index
     return(newdf)
 
-    
-
-
-    # print(totalresposdf.groupby(['variable','value']).transform(np.size))
-
-    
-    
+  
     
 
 def showplot(loco, vellroll, angvel, quad):
-    # fig=plt.figure(figsize = (10,30))
-    # gs=GridSpec(3,2)
-    # ax1=fig.add_subplot(gs[0,:])
-    # ax2=fig.add_subplot(gs[1,:])
-    # ax3=fig.add_subplot(gs[2,:])
-    #fig, axs = plt.subplots(nrows=2, figsize=(10,20))
-    
+
     # prepare and plot displacement data
     lococumsum = loco.cumsum()
     lococumsum['time'] = loco.index/framerate
     lococumsum = pd.melt(lococumsum, value_vars=micepos, id_vars='time')
     lococumsum.columns = ['Time [s]', 'Mice', 'Distance travelled [m]']
     
-    # 
     fig = plt.figure(num='Locomotion')
     sns.lineplot(x="Time [s]", y="Distance travelled [m]",
              hue="Mice",
              data=lococumsum, palette = "hls")
-    # ax = datcumsum.plot()
-    # ax.set_ylabel('Distance travelled [cm]')
-    # ax.set_xlabel('Time [s]')
+
     
     # prepare and plot velocity data
     newmicepos = ['Top-left', 'Top-right', 'Bottom-left', 'Bottom-right']
@@ -429,6 +318,7 @@ def showplot(loco, vellroll, angvel, quad):
     
 
 def createtab(loco, vellroll, angrot, angvel, quad):
+    # prepare output dataframe
     out = pd.DataFrame()
     out['Experiment'] = [exp]*4
     out['Mice position'] = micepos
@@ -453,7 +343,7 @@ def createtab(loco, vellroll, angrot, angvel, quad):
     out['Max angular velocity [m/s]'] = list(abs(angvel).max())
     
     
-    # quadrants
+    # quadrants (in progoress)
     #newquad = quad.set_index('mice').T.diff()
     
     # append data if requested
@@ -466,15 +356,13 @@ def createtab(loco, vellroll, angrot, angvel, quad):
             print("File to append `%s` not found, creating a new file" % (outfile))
     
     
-    # # export
+    # export data
     path = outfile.split("/")
     path = list(filter(None, path))
     path.remove(".")
     ## test if absolute path is given
     if os.path.exists("/"+ path[0]):
         out.to_csv(outfile,index=False, sep = "\t")
-
-
     else:
         newpath = ["."] + path[:-1]
         creatpath = "/".join(newpath)
