@@ -22,7 +22,7 @@ VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'pandas', 'matplotlib', 'sys', 'getopt', 'math', 'numpy', 'seaborn','os'
+    'pandas', 'matplotlib', 'numpy', 'seaborn'
 ]
 
 # What packages are optional?
