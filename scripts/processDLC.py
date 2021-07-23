@@ -47,6 +47,9 @@ def argparse():
 	    
 		options, inputfile = getopt.getopt(sys.argv[1:], "hr:f:s:t:b:o:a",["help","framerate=", "scale=", "resolution=", "botright=", "topleft=", "outfile=", "append"])
 		inputfile = str(inputfile[0]).strip()
+		ext = os.path.splitext(inputfile)[1]
+		if ext != ".h5":
+		    sys.exit("Wrong input format provided")
 	except getopt.GetoptError as err:
 		sys.exit(usage)		# exit script and print usage if arguments to options are not provided
 	except IndexError:
@@ -104,10 +107,21 @@ def processh5(inputfile):
     
     # get experiment, mice names and body parts
     cols = dat.columns.to_frame()
+    
+    ## check column names
+    desired_columns = ['scorer', 'individuals', 'bodyparts', 'coords']
+    if desired_columns != list(cols.columns):
+        sys.exit("Data do not contain correct headers")
+    
+    ## extract column info
     exp = list(set(cols['scorer']))[0]
     mice = list(set(cols['individuals']))
     mice.sort()
     parts = list(set(cols['bodyparts']))
+    
+    # exit if required parts are not labelled
+    if not all(item in parts for item in ['middle_head','tail_base']):
+        sys.exit("Data is missing coordinates for key bodyparts")
     
     # get mice positions in setup
     firstpos = np.array(dat.loc[0:0, (exp, mice, "nose", ["x","y"])])[0]
@@ -223,6 +237,7 @@ def testquad(inputdat):
     for bound in [x1,xmid,x2]:
         xres = xres + (basexcoord > bound) 
         
+    # test y axis
     yres = np.zeros((len(inputdat), len(mice)))
     for bound in [y1,ymid,y2]:
         yres = yres + (baseycoord > bound)    
