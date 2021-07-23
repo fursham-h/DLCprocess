@@ -16,9 +16,10 @@ import os
 usage = """
 
 *****************************************************************************
-This script.....
+This script processes data obtained from pose-estimation of mouse behaviour
+in an Open Maze test, using DeepLabCut.
 
-Use Syntax
+Use the following command to run the analysis:
 python processDLC.py <option-argument> <DLC-processed .h5 datafile>
 
 options:
