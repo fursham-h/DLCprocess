@@ -462,14 +462,14 @@ def createtab(loco, vellroll, angrot, angvel, quad):
     path.remove(".")
     ## test if absolute path is given
     if os.path.exists("/"+ path[0]):
-        out.to_csv(outfile,index=False)
+        out.to_csv(outfile,index=False, sep = "\t")
         
         
     else:
         newpath = ["."] + path[:-1]
         creatpath = "/".join(newpath)
         os.makedirs(creatpath, exist_ok = True)
-        out.to_csv(outfile,index=False)
+        out.to_csv(outfile,index=False, sep = "\t")
         
 
     
@@ -488,8 +488,9 @@ if __name__ == "__main__":
     velodat = testvelo(locodat)
     nrotations,angveldat = testrot(datatable)
     quaddat = testquad(datatable)
-    showplot(locodat, velodat, angveldat,quaddat)
     createtab(locodat, velodat, nrotations, angveldat,quaddat)
+    showplot(locodat, velodat, angveldat,quaddat)
+    
 
 
 
