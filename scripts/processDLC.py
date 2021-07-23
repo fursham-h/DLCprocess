@@ -393,14 +393,18 @@ def createtab(loco, vellroll, angrot, angvel, quad):
 ########################################
 
 if __name__ == "__main__":
+    
+    # parse command-line arguments and process input file 
     pathtoinput = argparse()
     datatable = processh5(pathtoinput)
     
-    # run function to calculate locomotion
+    # run function to quantify measurements
     locodat = testloco(datatable)
     velodat = testvelo(locodat)
     nrotations,angveldat = testrot(datatable)
     quaddat = testquad(datatable)
+    
+    # output tables and plots
     createtab(locodat, velodat, nrotations, angveldat,quaddat)
     showplot(locodat, velodat, angveldat,quaddat)
     
