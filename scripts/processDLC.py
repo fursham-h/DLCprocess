@@ -8,7 +8,6 @@ import math
 import numpy as np
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
-from scipy.signal import find_peaks
 import matplotlib.patches as mpatches
 import os
 
@@ -24,13 +23,13 @@ python processDLC.py <option-argument> <DLC-processed .h5 datafile>
 
 options:
 opt:			argument:	Default		description:
-  -r (--resolution)	  string  	 1280x960 	  	  Resolution of video from which data was obtained
+  -r (--resolution)	  string  	 1280x960 	  Resolution of video from which data was obtained
   -f (--framerate)	  integer  	 25 	  	  Framerate of video from which data was obtained
-  -s (--scale)  		 float  		 6 	  	  Scale of the video.
-  -t (--topleft)	  string  	 312x156 	  	  Coordinate of the top-left most corner of setup
-  -b (--botright)	  string  	 978x839 	  	  Coordinate of the bottom-right most corner of setup
-  -o (--outfile)	  string  	 ./DLCprocess.tsv 	  	  Path to output filename
-  -a (--append)	  NA  	 False	  	  Whether to append DLC data
+  -s (--scale)  	  float  	 6 	  	  Scale of the video.
+  -t (--topleft)	  string  	 312x156 	  Coordinate of the top-left most corner of setup
+  -b (--botright)	  string  	 978x839 	  Coordinate of the bottom-right most corner of setup
+  -o (--outfile)	  string  	 ./DLCprocess.tsv Path to output filename
+  -a (--append)           NA  	         False	  	  Whether to append DLC data
   -h (--help)		  NA  		 False	 	  Displays usage of the script
 *****************************************************************************
 
@@ -489,7 +488,7 @@ if __name__ == "__main__":
     velodat = testvelo(locodat)
     nrotations,angveldat = testrot(datatable)
     quaddat = testquad(datatable)
-    #showplot(locodat, velodat, angveldat,quaddat)
+    showplot(locodat, velodat, angveldat,quaddat)
     createtab(locodat, velodat, nrotations, angveldat,quaddat)
 
 
