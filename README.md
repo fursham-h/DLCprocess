@@ -57,8 +57,8 @@ interactive pyplot. You may save these images using the export tool. Below are
 some examples of output plots:
 
 <p align="left">
-  <img src="images/Locomotion.png" width="450"/>
-  <img src="images/Velocity.png" width="400"/>
+  <img src="images/Locomotion.png" width="350"/>
+  <img src="images/Velocity.png" width="300"/>
 </p>
 
 The measurements will also be saved as a tsv file to the current working directory
