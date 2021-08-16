@@ -273,8 +273,10 @@ def testquad(inputdat):
     
     # remove duplicates and prepare output dataframe
     totalresposdfmeltunique = totalresposdfmelt.loc[0:totalresposdfmelt.index[-1], ('variable', 'value','size')].drop_duplicates()
-    totalresposdfmeltunique = totalresposdfmeltunique.sort_values(by = ['variable'])
+    totalresposdfmeltunique = totalresposdfmeltunique.sort_values(by = ['variable','value'])
+    
     totalresposdfmeltunique['cumsum'] = totalresposdfmeltunique.groupby(['variable']).cumsum()  # this convert counts to cumulative sum
+    
     out = totalresposdfmeltunique.pivot_table(index='variable',columns='value',values='cumsum', fill_value = 0)
 
     newdf = pd.DataFrame(np.array(out)/len(inputdat), columns = list(out.columns))
@@ -285,12 +287,14 @@ def testquad(inputdat):
     
 
 def showplot(loco, vellroll, angvel, quad):
+    newmicepos = ['Top-left', 'Top-right', 'Bottom-left', 'Bottom-right']
 
     # prepare and plot displacement data
     lococumsum = loco.cumsum()
     lococumsum['time'] = loco.index/framerate
-    lococumsum = pd.melt(lococumsum, value_vars=micepos, id_vars='time')
+    lococumsum = pd.melt(lococumsum, value_vars=newmicepos, id_vars='time')
     lococumsum.columns = ['Time [s]', 'Mice', 'Distance travelled [m]']
+    
     
     fig = plt.figure(num='Locomotion')
     sns.lineplot(x="Time [s]", y="Distance travelled [m]",
@@ -299,7 +303,7 @@ def showplot(loco, vellroll, angvel, quad):
 
     
     # prepare and plot velocity data
-    newmicepos = ['Top-left', 'Top-right', 'Bottom-left', 'Bottom-right']
+    
     vellroll = vellroll.reindex(columns = newmicepos)
     
     vellroll['time'] = vellroll.index/framerate
@@ -327,13 +331,13 @@ def showplot(loco, vellroll, angvel, quad):
     # prepare and plot stacked data
     pal = sns.color_palette("hls")
     fig = plt.figure(num='Quadrants')
-    bar1 =  sns.barplot(x="mice",  y="Corner", data=quad, color=pal[0])
-    bar2 =  sns.barplot(x="mice",  y="Middle", data=quad, color=pal[1])
+    bar1 =  sns.barplot(x="mice",  y="Middle", data=quad, color=pal[0])
+    bar2 =  sns.barplot(x="mice",  y="Corner", data=quad, color=pal[1])
     # bar2 =  sns.barplot(x="mice",  y="Bottom-right", data=quad, color=pal[2])
     # bar1 =  sns.barplot(x="mice",  y="Bottom-left", data=quad, color=pal[3])
     # add legend
-    first_bar = mpatches.Patch(color=pal[0], label='Time spent in corners')
-    second_bar = mpatches.Patch(color=pal[1], label='Time spent in middle')
+    first_bar = mpatches.Patch(color=pal[0], label='Time spent in middle')
+    second_bar = mpatches.Patch(color=pal[1], label='Time spent in corners')
     # third_bar = mpatches.Patch(color=pal[2], label='Bottom-right quadrant')
     # fourth_bar = mpatches.Patch(color=pal[3], label='Bottom-left quadrant')
     plt.legend(handles=[first_bar, second_bar], prop={'size':5})
