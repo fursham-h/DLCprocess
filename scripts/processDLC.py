@@ -220,12 +220,18 @@ def testrot(inputdat):
 def testquad(inputdat):
     
     # get coordiantes of boundaries
-    x1 = topleft[0] + (botright[0]-topleft[0]-25)/4
-    xmid = topleft[0] + (botright[0]-topleft[0])/2
-    x2 = botright[0] - (botright[0]-topleft[0]-25)/4
-    y1 = topleft[1] + (botright[1]-topleft[1]-25)/4
-    ymid = topleft[1] + (botright[1]-topleft[1])/2
-    y2 = botright[1] - (botright[1]-topleft[1]-25)/4
+    xbounds = list(map(lambda x: (topleft[0] + ((botright[0]-topleft[0]-25)/8)*(x+1)) if x < 4 else (topleft[0] + 25 + ((botright[0]-topleft[0]-25)/8)*(x+1)), range(8)))
+    ybounds = list(map(lambda x: (topleft[1] + ((botright[1]-topleft[1]-25)/8)*(x+1)) if x < 4 else (topleft[1] + 25 + ((botright[1]-topleft[1]-25)/8)*(x+1)), range(8)))  
+  
+    
+    # x1 = topleft[0] + ((botright[0]-topleft[0]-25)/8)*1
+    # x1 = topleft[0] + (botright[0]-topleft[0]-25)/
+    # xmid = topleft[0] + (botright[0]-topleft[0])/2
+    # x2 = botright[0] - (botright[0]-topleft[0]-25)/4
+    # 
+    # y1 = topleft[1] + (botright[1]-topleft[1]-25)/4
+    # ymid = topleft[1] + (botright[1]-topleft[1])/2
+    # y2 = botright[1] - (botright[1]-topleft[1]-25)/4
     
     
     # prepare pos of basetail
@@ -234,37 +240,43 @@ def testquad(inputdat):
     
     # test x axis
     xres = np.zeros((len(inputdat), len(mice)))
-    for bound in [x1,xmid,x2]:
+    for bound in xbounds:
         xres = xres + (basexcoord > bound) 
         
     # test y axis
     yres = np.zeros((len(inputdat), len(mice)))
-    for bound in [y1,ymid,y2]:
+    for bound in ybounds:
         yres = yres + (baseycoord > bound)    
         
     xres = xres + 1
-    yres = yres * 4
+    yres = yres * 8
     totalres = xres + yres
     # totalres = np.char.mod('%d', totalres)
     
     totalrespos = np.full((len(inputdat), len(mice)), 'None')
-    totalrespos = np.where(np.isin(totalres, [1,3,9,11]), "Top-left", totalrespos)
-    totalrespos = np.where(np.isin(totalres, [2,4,10,12]), "Top-right", totalrespos)
-    totalrespos = np.where(np.isin(totalres, [5,7,13,15]), "Bottom-left", totalrespos)
-    totalrespos = np.where(np.isin(totalres, [6,8,14,16]), "Bottom-right", totalrespos)
+    corners = [1,5,33,37,4,8,36,40,25,29,57,61,28,29,60,64]
+    middle = [10,11,18,19,14,15,22,23,42,43,46,47,50,51,54,55]
+    totalrespos = np.where(np.isin(totalres, corners), "Corner", totalrespos)
+    totalrespos = np.where(np.isin(totalres, middle), "Middle", totalrespos)
+    
+    
+    # totalrespos = np.where(np.isin(totalres, [25,29,57,61]), "Bottom-left", totalrespos)
+    # totalrespos = np.where(np.isin(totalres, [28,29,60,64]), "Bottom-right", totalrespos)
+    
     
     # tally data
     totalresposdf = pd.DataFrame(totalrespos, columns = micepos)
     totalresposdf['id'] = totalresposdf.index
     totalresposdfmelt = pd.melt(totalresposdf, value_vars=micepos, id_vars='id')
+    totalresposdfmelt = totalresposdfmelt[totalresposdfmelt["value"] != "None"]
     totalresposdfmelt['size'] = totalresposdfmelt.groupby(['variable','value']).transform(np.size)
     
     # remove duplicates and prepare output dataframe
-    totalresposdfmeltunique = totalresposdfmelt.loc[0:len(totalresposdfmelt), ('variable', 'value','size')].drop_duplicates()
-    totalresposdfmeltunique = totalresposdfmeltunique.sort_values(by = ['variable','value'])
+    totalresposdfmeltunique = totalresposdfmelt.loc[0:totalresposdfmelt.index[-1], ('variable', 'value','size')].drop_duplicates()
+    totalresposdfmeltunique = totalresposdfmeltunique.sort_values(by = ['variable'])
     totalresposdfmeltunique['cumsum'] = totalresposdfmeltunique.groupby(['variable']).cumsum()  # this convert counts to cumulative sum
     out = totalresposdfmeltunique.pivot_table(index='variable',columns='value',values='cumsum', fill_value = 0)
-    
+
     newdf = pd.DataFrame(np.array(out)/len(inputdat), columns = list(out.columns))
     newdf['mice'] = out.index
     return(newdf)
@@ -315,16 +327,16 @@ def showplot(loco, vellroll, angvel, quad):
     # prepare and plot stacked data
     pal = sns.color_palette("hls")
     fig = plt.figure(num='Quadrants')
-    bar4 =  sns.barplot(x="mice",  y="Top-right", data=quad, color=pal[0])
-    bar3 =  sns.barplot(x="mice",  y="Top-left", data=quad, color=pal[1])
-    bar2 =  sns.barplot(x="mice",  y="Bottom-right", data=quad, color=pal[2])
-    bar1 =  sns.barplot(x="mice",  y="Bottom-left", data=quad, color=pal[3])
+    bar1 =  sns.barplot(x="mice",  y="Corner", data=quad, color=pal[0])
+    bar2 =  sns.barplot(x="mice",  y="Middle", data=quad, color=pal[1])
+    # bar2 =  sns.barplot(x="mice",  y="Bottom-right", data=quad, color=pal[2])
+    # bar1 =  sns.barplot(x="mice",  y="Bottom-left", data=quad, color=pal[3])
     # add legend
-    first_bar = mpatches.Patch(color=pal[0], label='Top-right quadrant')
-    second_bar = mpatches.Patch(color=pal[1], label='Top-left quadrant')
-    third_bar = mpatches.Patch(color=pal[2], label='Bottom-right quadrant')
-    fourth_bar = mpatches.Patch(color=pal[3], label='Bottom-left quadrant')
-    plt.legend(handles=[first_bar, second_bar, third_bar, fourth_bar], prop={'size':5})
+    first_bar = mpatches.Patch(color=pal[0], label='Time spent in corners')
+    second_bar = mpatches.Patch(color=pal[1], label='Time spent in middle')
+    # third_bar = mpatches.Patch(color=pal[2], label='Bottom-right quadrant')
+    # fourth_bar = mpatches.Patch(color=pal[3], label='Bottom-left quadrant')
+    plt.legend(handles=[first_bar, second_bar], prop={'size':5})
     bar1.set_ylabel("Proportion spent in quadrants")
     bar1.set_xlabel("Mice")
     
