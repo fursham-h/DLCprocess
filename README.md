@@ -36,11 +36,12 @@ cd DLCprocess       # or path to DLCprocess
 python setup.py install
 ```
 
-## Running the script
-This repository contain a sample data in H5 format. To process this data using
-the code, simply run the following in terminal:
+## Running code through command-line
+This code processes pose estimation data output by DLC in H5 format. An example
+of such data can be found in the `data` directory. To process this data using
+the command-line, simply open your terminal and run the following:
 ```bash
-python scripts/processDLC.py testdata/trackeddata.h5
+python python processDLC.py data/trackeddata.h5
 
 ```
 
@@ -49,6 +50,23 @@ tool can be fine-tuned by changing input parameters. A list of arguments can be
 printed on terminal by running:
 ```bash
 python scripts/processDLC.py -h
+```
+
+## Running code interactively
+You may also run the code above interactively in your python interpreter.
+Be sure to run python in the directory containing DLCprocess. 
+
+Run the code below to run the workflow:
+```python
+from scripts.process import runDLCprocess
+
+runDLCprocess("data/trackeddata.h5")
+```
+
+You may tweak the parameters for DLCprocess. More information on this
+can be obtained by running:
+```python
+help(runDLCprocess)
 ```
 
 ## Output 
