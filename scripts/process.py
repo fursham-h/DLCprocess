@@ -443,18 +443,8 @@ def createtab(loco, vellroll, angrot, angvel, quad):
         os.makedirs(creatpath, exist_ok = True)
         out.to_csv(outfile,index=False, sep = "\t")
         
-
-    
-    
-
-########################################
-################ Main ##################
-########################################
-
-if __name__ == "__main__":
-    
+def runworkflow(pathtoinput):
     # parse command-line arguments and process input file 
-    pathtoinput = argparse()
     datatable = processh5(pathtoinput)
     
     # run function to quantify measurements
@@ -467,6 +457,17 @@ if __name__ == "__main__":
     # output tables and plots
     createtab(locodat, velodat, nrotations, angveldat,quaddat)
     showplot(locodat, velodat, angveldat,quaddat,reardat,reardat2)
+
+    
+    
+
+########################################
+################ Main ##################
+########################################
+
+#if __name__ == "__main__":
+    
+    
     
 
 
