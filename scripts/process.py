@@ -36,6 +36,7 @@ opt:			argument:	Default		description:
 
 """
 
+
 ########################################
 ############ Class and Def #############
 ########################################
@@ -93,6 +94,67 @@ def argparse():
 			sys.exit(usage)
 	
 	return inputfile
+
+def runDLCprocess(path_to_h5, 
+    frame_rate = 25, 
+    image_scale = 6, 
+    image_resolution = [1280,960], 
+    topleft_pixel = [312,156], 
+    botright_pixel = [978,839], 
+    output_file = "./DLCprocess.tsv", 
+    append_tsv = False):
+    """
+    Run DLCprocess workflow
+
+    Parameters
+    ----------
+    path_to_h5 : str, required
+        Path to input h5 file.
+    frame_rate : integer, optional
+        Frame rate of video from which data was obtained. The default is 25.
+    image_scale : integer, optional
+        Scale factor of setup relative to movie. The default is 6.
+    image_resolution : 2-element integer array, optional
+        Resolution of video. The default is [1280,960].
+    topleft_pixel : 2-element integer array, optional
+        x,y pixel position of the top-left position of the maze. The default is [312,156].
+    botright_pixel : 2-element integer array, optional
+        x,y pixel position of the bottom-right position of the maze. The default is [978,839].
+    output_file : str, optional
+        Path to output tsv file. By default, data will be exported to file named 'DLCprocess.tsv' in current working directory.
+    append_tsv : bool, optional
+        Whether or not to append information to output tsv. The default is false.
+
+    Returns
+    -------
+    4 Matplotlib plots pertaining to locomotion, velocity, angular velocity and time spent in quadrants.
+    A tsv file containing data for each mice. 
+
+    """
+
+    # define global variables
+    global framerate
+    global res
+    global scale
+    global topleft
+    global botright
+    global outfile
+    global append
+
+    # add info
+    framerate = frame_rate
+    res = image_resolution
+    scale = image_scale
+    topleft = topleft_pixel
+    botright = botright_pixel
+    outfile = output_file
+    append = append_tsv
+
+    runworkflow(path_to_h5)
+
+    
+
+    
 
 ### function to process input h5 file and extract info
 def processh5(inputfile):
@@ -320,7 +382,8 @@ def showplot(loco, vellroll, angvel, quad, rear,rear2):
     lococumsum.columns = ['Time [s]', 'Mice', 'Distance travelled [m]']
     
     
-    fig = plt.figure(num='Locomotion')
+    #fig = plt.figure(num='Plot of mice locomotion')
+    fig = plt.figure()
     sns.lineplot(x="Time [s]", y="Distance travelled [m]",
              hue="Mice",
              data=lococumsum, palette = "hls")
@@ -340,6 +403,7 @@ def showplot(loco, vellroll, angvel, quad, rear,rear2):
     #          data=vellroll)
     g = sns.FacetGrid(vellroll, col="Mice", palette = "hls", col_wrap = 2, hue = "Mice")
     g.map(sns.lineplot, 'Time [s]', 'Velocty [m/s]', ci = [100000]*len(vellroll))
+
     
     # prepare and plot angular velocity data
     angvel['time'] = angvel.index/framerate
@@ -354,7 +418,8 @@ def showplot(loco, vellroll, angvel, quad, rear,rear2):
     
     # prepare and plot stacked data
     pal = sns.color_palette("hls")
-    fig = plt.figure(num='Qu adrants')
+    #fig = plt.figure(num='Plot of time spent in quadrants')
+    fig = plt.figure()
     bar1 =  sns.barplot(x="mice",  y="Middle", data=quad, color=pal[0])
     bar2 =  sns.barplot(x="mice",  y="Corner", data=quad, color=pal[1])
     # bar2 =  sns.barplot(x="mice",  y="Bottom-right", data=quad, color=pal[2])
@@ -368,24 +433,24 @@ def showplot(loco, vellroll, angvel, quad, rear,rear2):
     bar1.set_ylabel("Proportion spent in quadrants")
     bar1.set_xlabel("Mice")
     
-    # prepare and plot rearing data
-    rear = rear.reindex(columns = newmicepos)
+    # # prepare and plot rearing data
+    # rear = rear.reindex(columns = newmicepos)
 
-    rear['time'] = rear.index/framerate
-    rear = pd.melt(rear, value_vars=newmicepos, id_vars='time')
-    rear.columns = ['Time [s]', 'Mice', 'Horizontal length']
+    # rear['time'] = rear.index/framerate
+    # rear = pd.melt(rear, value_vars=newmicepos, id_vars='time')
+    # rear.columns = ['Time [s]', 'Mice', 'Horizontal length']
 
-    rearplot = sns.FacetGrid(rear, col="Mice", palette = "hls", col_wrap = 2, hue = "Mice")
-    rearplot.map(sns.lineplot, 'Time [s]', 'Horizontal length', ci = [100000]*len(rear))
+    # rearplot = sns.FacetGrid(rear, col="Mice", palette = "hls", col_wrap = 2, hue = "Mice")
+    # rearplot.map(sns.lineplot, 'Time [s]', 'Horizontal length', ci = [100000]*len(rear))
     
-    rear2 = rear2.reindex(columns = newmicepos)
+    # rear2 = rear2.reindex(columns = newmicepos)
 
-    rear2['time'] = rear2.index/framerate
-    rear2 = pd.melt(rear2, value_vars=newmicepos, id_vars='time')
-    rear2.columns = ['Time [s]', 'Mice', 'Horizontal length']
+    # rear2['time'] = rear2.index/framerate
+    # rear2 = pd.melt(rear2, value_vars=newmicepos, id_vars='time')
+    # rear2.columns = ['Time [s]', 'Mice', 'Horizontal length']
 
-    rearplot2 = sns.FacetGrid(rear2, col="Mice", palette = "hls", col_wrap = 2, hue = "Mice")
-    rearplot2.map(sns.lineplot, 'Time [s]', 'Horizontal length', ci = [100000]*len(rear2))
+    # rearplot2 = sns.FacetGrid(rear2, col="Mice", palette = "hls", col_wrap = 2, hue = "Mice")
+    # rearplot2.map(sns.lineplot, 'Time [s]', 'Horizontal length', ci = [100000]*len(rear2))
     
     
     plt.show()
