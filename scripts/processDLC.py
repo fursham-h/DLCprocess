@@ -165,6 +165,7 @@ def testvelo(dat):
     vel = pd.DataFrame(np.array(dat)*25, columns = micepos)
     vellroll = vel.rolling(25).mean().shift(-3)
     vellroll.fillna(0)
+
     return(vellroll)
 
 # function to test rotation
@@ -283,10 +284,33 @@ def testquad(inputdat):
     newdf['mice'] = out.index
     return(newdf)
 
-  
+def testrear(inputdat):
     
+     # extract vector of middle-head to tail 
+    ax = np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'middle_head', 'x')]) - np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'tail_base', 'x')])
+    ay = np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'middle_head', 'y')]) - np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'tail_base', 'y')])
+    
+    axnose = np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'nose', 'x')]) - np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'tail_base', 'x')])
+    aynose = np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'nose', 'y')]) - np.array(inputdat.loc[0:len(inputdat), (exp, mice, 'tail_base', 'y')])
+    
+    # Calculate displacement of vector and create output
+    out = np.sqrt((ax **2) + (ay**2)) * 0.026458 * scale * 0.01
+    out = np.r_[np.zeros((1,4)), out]
+    out = pd.DataFrame(out, columns = micepos)
+    out = out.rolling(25).mean().shift(-3)
+    out.fillna(0)
+    
+    out2 = np.sqrt((axnose **2) + (aynose **2)) * 0.026458 * scale * 0.01
+    out2 = np.r_[np.zeros((1,4)), out2]
+    out2 = pd.DataFrame(out2, columns = micepos)
+    out2 = out2.rolling(25).mean().shift(-3)
+    out2.fillna(0)
+    
+    out2 = out2-out
 
-def showplot(loco, vellroll, angvel, quad):
+    return(out,out2)
+
+def showplot(loco, vellroll, angvel, quad, rear,rear2):
     newmicepos = ['Top-left', 'Top-right', 'Bottom-left', 'Bottom-right']
 
     # prepare and plot displacement data
@@ -330,7 +354,7 @@ def showplot(loco, vellroll, angvel, quad):
     
     # prepare and plot stacked data
     pal = sns.color_palette("hls")
-    fig = plt.figure(num='Quadrants')
+    fig = plt.figure(num='Qu adrants')
     bar1 =  sns.barplot(x="mice",  y="Middle", data=quad, color=pal[0])
     bar2 =  sns.barplot(x="mice",  y="Corner", data=quad, color=pal[1])
     # bar2 =  sns.barplot(x="mice",  y="Bottom-right", data=quad, color=pal[2])
@@ -343,6 +367,25 @@ def showplot(loco, vellroll, angvel, quad):
     plt.legend(handles=[first_bar, second_bar], prop={'size':5})
     bar1.set_ylabel("Proportion spent in quadrants")
     bar1.set_xlabel("Mice")
+    
+    # prepare and plot rearing data
+    rear = rear.reindex(columns = newmicepos)
+
+    rear['time'] = rear.index/framerate
+    rear = pd.melt(rear, value_vars=newmicepos, id_vars='time')
+    rear.columns = ['Time [s]', 'Mice', 'Horizontal length']
+
+    rearplot = sns.FacetGrid(rear, col="Mice", palette = "hls", col_wrap = 2, hue = "Mice")
+    rearplot.map(sns.lineplot, 'Time [s]', 'Horizontal length', ci = [100000]*len(rear))
+    
+    rear2 = rear2.reindex(columns = newmicepos)
+
+    rear2['time'] = rear2.index/framerate
+    rear2 = pd.melt(rear2, value_vars=newmicepos, id_vars='time')
+    rear2.columns = ['Time [s]', 'Mice', 'Horizontal length']
+
+    rearplot2 = sns.FacetGrid(rear2, col="Mice", palette = "hls", col_wrap = 2, hue = "Mice")
+    rearplot2.map(sns.lineplot, 'Time [s]', 'Horizontal length', ci = [100000]*len(rear2))
     
     
     plt.show()
@@ -419,10 +462,11 @@ if __name__ == "__main__":
     velodat = testvelo(locodat)
     nrotations,angveldat = testrot(datatable)
     quaddat = testquad(datatable)
+    reardat,reardat2 = testrear(datatable)
     
     # output tables and plots
     createtab(locodat, velodat, nrotations, angveldat,quaddat)
-    showplot(locodat, velodat, angveldat,quaddat)
+    showplot(locodat, velodat, angveldat,quaddat,reardat,reardat2)
     
 
 
